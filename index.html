@@ -330,7 +330,7 @@ function primaryAction(){
     if(!name||!phone){ alert('Укажите имя и телефон.'); return; }
     updateSummary();
     const msg = 'Заявка: '+document.getElementById('summary').innerText+`\nКлиент: ${name}\nТелефон: ${phone}`;
-    location.href = `https://wa.me/${salon.phone.replace(/[^\\d]/g,'')}?text=${encodeURIComponent(msg)}`;
+    location.href = `https://wa.me/996509951599?text=${encodeURIComponent(msg)}`;
     setTimeout(()=>alert('Если WhatsApp не открылся, скопируйте сообщение:\n\n'+msg),900);
     return;
   }
