@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Barbershop 01 — Онлайн-запись</title>
+<style>
+  :root{
+    --bg:#f6f7f8;--card:#fff;--text:#1f2328;--muted:#6a6f75;
+    --border:#e6e7e9;--chip:#eef0f3;--black:#111;--radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,Inter,Roboto,Arial}
+  .wrap{max-width:720px;margin:0 auto;min-height:100dvh;background:var(--bg)}
+  /* Top bar */
+  .top{position:sticky;top:0;z-index:20;background:var(--card);
+    border-bottom:1px solid var(--border);padding:10px 14px}
+  .row{display:flex;align-items:center;gap:10px}
+  .back{font-size:22px;border:0;background:transparent;padding:6px 8px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:34px;height:34px;border-radius:50%;
+    background:#000;color:#fff;display:grid;place-items:center;font-weight:800}
+  .title{font-weight:800}
+  .sub{color:var(--muted);font-size:12px;line-height:1.2}
+  /* Sections / cards */
+  .section{padding:14px}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .item{display:flex;align-items:center;justify-content:space-between;
+    padding:14px;border-radius:12px;border:1px solid var(--border);background:#fff}
+  .left{display:flex;align-items:center;gap:12px}
+  .ic{width:34px;height:34px;border-radius:10px;background:var(--chip);
+    display:grid;place-items:center}
+  .rarr{color:var(--muted)}
+  /* Services */
+  .svc{display:flex;align-items:center;justify-content:space-between;
+    padding:14px;border:1px solid var(--border);border-radius:12px;background:#fff}
+  .svc .meta{color:var(--muted);font-size:12px;margin-top:4px}
+  .check{appearance:none;width:22px;height:22px;border:2px solid #c7c9cc;border-radius:6px;display:inline-grid;place-items:center}
+  .check:checked{background:#111;border-color:#111}
+  .check:checked::after{content:"✓";color:#fff;font-size:14px}
+  /* Masters */
+  .master{display:flex;gap:12px;padding:14px;border:1px solid var(--border);border-radius:12px;background:#fff}
+  .ava{width:46px;height:46px;border-radius:50%;background:linear-gradient(#eee,#ddd);display:grid;place-items:center;font-weight:700}
+  .mname{font-weight:700}
+  .mmeta{color:var(--muted);font-size:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{padding:8px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--border);cursor:pointer}
+  .chip.sel{background:#111;color:#fff;border-color:#111}
+  .radio{width:20px;height:20px;border-radius:50%;border:2px solid #bbb;display:inline-grid;place-items:center}
+  .radio span{width:10px;height:10px;border-radius:50%;background:#111;transform:scale(0);transition:.15s}
+  .radio.act span{transform:scale(1)}
+  /* Calendar */
+  .cal{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .cal-top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:10px}
+  .dow,.d{height:40px;display:grid;place-items:center;border-radius:10px}
+  .dow{font-size:12px;color:var(--muted)}
+  .d{background:#fff;border:1px solid var(--border);cursor:pointer}
+  .d.off{opacity:.35}
+  .d.sel{background:#111;color:#fff;border-color:#111}
+  .slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  /* Checkout */
+  .f{display:grid;gap:10px}
+  .inp{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px}
+  .hint{font-size:12px;color:var(--muted)}
+  /* CTA */
+  .cta{position:sticky;bottom:0;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:12px 14px}
+  .btn{width:100%;padding:14px;border-radius:12px;border:0;background:#111;color:#fff;font-weight:800;font-size:16px}
+  .muted{color:var(--muted)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Top -->
+  <div class="top">
+    <div class="row">
+      <button class="back" id="backBtn" onclick="goBack()" hidden>‹</button>
+      <div class="brand">
+        <div class="logo">01</div>
+        <div>
+          <div class="title">Barbershop 01</div>
+          <div class="sub">Бишкек, ул. Уметалиева 89 • 11:00–21:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="screen-home" class="section">
+    <div class="list">
+      <button class="item" onclick="show('screen-services')">
+        <div class="left"><div class="ic">📋</div><div><div class="title">Выбрать услуги</div><div class="sub">Цены и длительность</div></div></div><div class="rarr">›</div>
+      </button>
+      <button class="item" onclick="show('screen-masters')">
+        <div class="left"><div class="ic">👤</div><div><div class="title">Выбрать специалиста</div><div class="sub">Посмотрите ближайшие свободные слоты</div></div></div><div class="rarr">›</div>
+      </button>
+      <button class="item" onclick="show('screen-calendar')">
+        <div class="left"><div class="ic">🗓️</div><div><div class="title">Выбрать дату и время</div><div class="sub">Свободные окна по дням</div></div></div><div class="rarr">›</div>
+      </button>
+      <button class="item" onclick="show('screen-checkout')">
+        <div class="left"><div class="ic">✅</div><div><div class="title">Перейти к подтверждению</div><div class="sub">Имя, телефон и отправка заявки</div></div></div><div class="rarr">›</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <div id="screen-services" class="section" hidden>
+    <div class="list" id="svcList"></div>
+  </div>
+
+  <!-- MASTERS -->
+  <div id="screen-masters" class="section" hidden>
+    <div class="list" id="mastersList"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="screen-calendar" class="section" hidden>
+    <div class="cal">
+      <div class="cal-top">
+        <button onclick="shiftMonth(-1)">‹</button>
+        <div id="monthLabel" style="font-weight:800"></div>
+        <button onclick="shiftMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calHead"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="item" style="margin-top:12px;flex-direction:column;align-items:flex-start">
+      <div class="sub">Свободное время</div>
+      <div class="slots" id="daySlots"></div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT -->
+  <div id="screen-checkout" class="section" hidden>
+    <div class="item" style="flex-direction:column;align-items:flex-start">
+      <div style="font-weight:800">Ваш выбор</div>
+      <div id="summary" class="sub" style="margin-top:6px"></div>
+    </div>
+    <div class="item" style="margin-top:10px">
+      <div class="f" style="width:100%">
+        <input class="inp" id="name" placeholder="Ваше имя">
+        <input class="inp" id="phone" placeholder="+996 ___ ___ ___" inputmode="tel">
+        <div class="hint">После подтверждения заявка откроется в WhatsApp на номер салона.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STICKY CTA -->
+  <div class="cta">
+    <button class="btn" onclick="primaryAction()">Продолжить</button>
+  </div>
+</div>
+
+<script>
+  /* ---------- ДАННЫЕ ---------- */
+  const masters = [
+    {id:'m1', name:'Каабай', role:'Мастер со стажем', rating:4.9, next:['10:00','10:30','11:00','11:30','12:00']},
+    {id:'m2', name:'Азамат', role:'Мастер со стажем', rating:4.7, next:['10:00','10:30','11:30','12:20']},
+    {id:'m3', name:'Сумая', role:'Мастер', rating:5.0, next:['18:00','18:30','19:00','19:30']},
+  ];
+  const services = [
+    {id:'s1', name:'Стрижка', price:500, dur:40},
+    {id:'s2', name:'Стрижка бороды', price:400, dur:25},
+    {id:'s3', name:'Покраска', price:400, dur:45},
+    {id:'s4', name:'Окантовка', price:200, dur:10},
+    {id:'s5', name:'Мытьё головы', price:200, dur:10},
+    {id:'s6', name:'Укладка', price:200, dur:15},
+    {id:'s7', name:'Воск (зона)', price:100, dur:10},
+  ];
+  const salon = {phone:'+996509951599', address:'Бишкек, ул. Уметалиева 89'};
+
+  /* ---------- СОСТОЯНИЕ ---------- */
+  const state = {services:new Set(), master:null, date:null, time:null};
+  const screens = ['screen-home','screen-services','screen-masters','screen-calendar','screen-checkout'];
+  const backBtn = document.getElementById('backBtn');
+
+  function show(id){
+    screens.forEach(s=>document.getElementById(s).hidden = (s!==id));
+    backBtn.hidden = (id==='screen-home');
+    if(id==='screen-checkout') updateSummary();
+    updatePrimaryLabel(id);
+    history.pushState({id},'',location.href);
+  }
+  function goBack(){ history.back(); }
+  window.onpopstate = (e)=>{ const id = e.state?.id || 'screen-home'; screens.forEach(s=>document.getElementById(s).hidden=(s!==id)); backBtn.hidden=(id==='screen-home'); updatePrimaryLabel(id); };
+
+  /* ---------- SERVICES RENDER ---------- */
+  function renderServices(){
+    const box = document.getElementById('svcList'); box.innerHTML='';
+    services.forEach(s=>{
+      const row = document.createElement('div'); row.className='svc';
+      row.innerHTML = `<div><div style="font-weight:700">${s.name}</div><div class="meta">${s.dur} мин • ${s.price} сом</div></div>`;
+      const ch = document.createElement('input'); ch.type='checkbox'; ch.className='check';
+      ch.checked = state.services.has(s.id);
+      ch.onchange = ()=>{ ch.checked ? state.services.add(s.id) : state.services.delete(s.id); };
+      row.appendChild(ch); box.appendChild(row);
+    });
+  }
+
+  /* ---------- MASTERS RENDER ---------- */
+  function renderMasters(){
+    const box = document.getElementById('mastersList'); box.innerHTML='';
+    masters.forEach(m=>{
+      const card = document.createElement('div'); card.className='master';
+      card.innerHTML = `
+        <div class="ava">${m.name[0]}</div>
+        <div style="flex:1">
+          <div class="mname">${m.name}</div>
+          <div class="mmeta">${m.role} • ★ ${m.rating}</div>
+          <div class="chips">${m.next.map(t=>`<span class="chip" data-mid="${m.id}" data-t="${t}">${t}</span>`).join('')}</div>
+        </div>
+        <label class="radio ${state.master===m.id?'act':''}" data-radio="${m.id}"><span></span></label>`;
+      box.appendChild(card);
+    });
+    box.querySelectorAll('[data-radio]').forEach(r=>{
+      r.onclick = ()=>{ state.master = r.dataset.radio; state.time=null; renderMasters(); };
+    });
+    box.querySelectorAll('.chip').forEach(ch=>{
+      if(state.master===ch.dataset.mid && state.time===ch.dataset.t) ch.classList.add('sel');
+      ch.onclick = ()=>{ state.master = ch.dataset.mid; state.time = ch.dataset.t; renderMasters(); };
+    });
+  }
+
+  /* ---------- CALENDAR ---------- */
+  const calHead = document.getElementById('calHead');
+  'Пн Вт Ср Чт Пт Сб Вс'.split(' ').forEach(d=>{ const el=document.createElement('div'); el.className='dow'; el.textContent=d; calHead.appendChild(el); });
+  const calGrid = document.getElementById('calGrid');
+  const monthLabel = document.getElementById('monthLabel');
+  const months = 'Январь Февраль Март Апрель Май Июнь Июль Август Сентябрь Октябрь Ноябрь Декабрь'.split(' ');
+  let cur = new Date(); cur.setDate(1);
+
+  function renderCal(){
+    calGrid.innerHTML='';
+    monthLabel.textContent = months[cur.getMonth()] + ' ' + cur.getFullYear();
+    const startDay = (cur.getDay()+6)%7;
+    const daysInMonth = new Date(cur.getFullYear(), cur.getMonth()+1, 0).getDate();
+    for(let i=0;i<startDay;i++){ const d=document.createElement('div'); d.className='d off'; calGrid.appendChild(d); }
+    for(let d=1; d<=daysInMonth; d++){
+      const el=document.createElement('div'); el.className='d'; el.textContent=d;
+      const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if(state.date===ds) el.classList.add('sel');
+      el.onclick = ()=>{ state.date=ds; state.time=null; renderCal(); renderDaySlots(); };
+      calGrid.appendChild(el);
+    }
+  }
+  function shiftMonth(delta){ cur.setMonth(cur.getMonth()+delta); renderCal(); renderDaySlots(); }
+  function renderDaySlots(){
+    const box = document.getElementById('daySlots'); box.innerHTML='';
+    if(!state.date){ box.innerHTML = '<span class="muted">Выберите дату</span>'; return; }
+    ['11:00','11:30','12:00','12:30','13:00','15:00','16:30','18:00','18:30','19:00','19:30']
+      .forEach(t=>{
+        const el=document.createElement('span'); el.className='chip'; el.textContent=t;
+        if(state.time===t) el.classList.add('sel');
+        el.onclick=()=>{ state.time=t; renderDaySlots(); };
+        box.appendChild(el);
+      });
+  }
+
+  /* ---------- SUMMARY & ACTION ---------- */
+  function money(v){ return new Intl.NumberFormat('ru-RU').format(v); }
+  function getSummaryText(){
+    const chosen = services.filter(s=>state.services.has(s.id));
+    const sum = chosen.reduce((a,b)=>a+b.price,0);
+    const dur = chosen.reduce((a,b)=>a+b.dur,0);
+    const m = masters.find(x=>x.id===state.master)?.name || 'любой';
+    return {
+      text: `Услуги: ${chosen.map(s=>s.name).join(', ') || '—'} • ${money(sum)} сом • ${dur||0} мин. Мастер: ${m}. Дата: ${state.date||'—'} ${state.time||''}`.trim(),
+      sum, dur, m
+    };
+  }
+  function updateSummary(){ document.getElementById('summary').innerHTML = getSummaryText().text || '<span class="muted">Выберите услуги / мастера / время</span>'; }
+  function updatePrimaryLabel(id){
+    const btn = document.querySelector('.btn');
+    if(id==='screen-checkout') btn.textContent='Подтвердить запись';
+    else btn.textContent='Продолжить';
+  }
+  function primaryAction(){
+    const visible = screens.find(id=>!document.getElementById(id).hidden);
+    if(visible==='screen-checkout'){
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const {text} = getSummaryText();
+      if(!name || !phone){ alert('Укажите имя и телефон.'); return; }
+      const msg = `Заявка: ${text}\nКлиент: ${name}\nТелефон: ${phone}`;
+      const wa = `https://wa.me/${salon.phone.replace(/[^\\d]/g,'')}?text=${encodeURIComponent(msg)}`;
+      // попытаемся открыть WhatsApp; если не выйдет — просто покажем данные
+      location.href = wa;
+      setTimeout(()=>alert('Если WhatsApp не открылся — скопируйте сообщение:\n\n'+msg),800);
+    }else{
+      // шаг за шагом
+      if(visible==='screen-home') show('screen-services');
+      else if(visible==='screen-services') show('screen-masters');
+      else if(visible==='screen-masters') show('screen-calendar');
+      else if(visible==='screen-calendar') show('screen-checkout');
+    }
+  }
+
+  /* ---------- INIT ---------- */
+  function init(){
+    renderServices();
+    renderMasters();
+    renderCal();
+    renderDaySlots();
+    updateSummary();
+  }
+  init();
+</script>
+</body>
+</html>
