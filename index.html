@@ -172,7 +172,11 @@
   </section>
 
   <!-- CTA -->
-  <div class="cta"><button class="btn btn-accent" onclick="primaryAction()" id="primaryBtn">Продолжить</button></div>
+  <div class="cta">
+  <div class="cta-row">
+    <button class="btn btn-secondary" id="backBtn" onclick="prevAction()" style="display:none">Назад</button>
+    <button class="btn btn-accent" onclick="primaryAction()" id="primaryBtn">Продолжить</button>
+  </div>
 </div>
 
 <script>
