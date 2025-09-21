@@ -419,11 +419,43 @@ function primaryAction(){
 }
 
 /* ====== INIT ====== */
-function init(){
-  renderServices(); renderMasters(); renderCal(); renderDaySlots();
-  showSection('services');
-  reconcileRules();
+function primaryAction(){
+  // какой сейчас видимый шаг?
+  const current = sections.find(id => document.getElementById(id).style.display !== 'none');
+
+  if (current === 'services') {
+    if (state.services.size === 0) { alert('Сначала выберите хотя бы одну услугу'); return; }
+    showSection('masters');
+    return;
+  }
+
+  if (current === 'masters') {
+    if (!state.master) { alert('Сначала выберите мастера'); return; }
+    showSection('calendar');
+    return;
+  }
+
+  if (current === 'calendar') {
+    if (!state.date || !state.time) { alert('Сначала выберите дату и время'); return; }
+    showSection('checkout');
+    return;
+  }
+
+  // current === 'checkout' — финальная отправка
+  if (state.services.size === 0) { alert('Выберите хотя бы одну услугу'); return; }
+  if (!state.master) { alert('Выберите мастера'); return; }
+  if (!state.date || !state.time) { alert('Выберите дату и время'); return; }
+
+  const name  = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  if (!name || !phone) { alert('Укажите имя и телефон'); return; }
+
   updateSummary();
+  const msg = 'Заявка: ' + document.getElementById('summary').innerText +
+              `\nКлиент: ${name}\nТелефон: ${phone}`;
+  const waUrl = `https://wa.me/996509951599?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank');
+  setTimeout(()=>alert('Заявка сформирована. Если WhatsApp не открылся — скопируйте сообщение:\n\n'+msg), 900);
 }
 init();
 
