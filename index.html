@@ -43,6 +43,10 @@
   .btn{width:100%;padding:16px;border-radius:14px;border:0;background:#111;color:#fff;font-weight:800;font-size:16px;cursor:pointer}
   .btn-accent{background:var(--accent);color:#111}
   .cta{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.6) 20%,rgba(0,0,0,.9));padding:14px}
+  .cta-row{display:flex;gap:10px}
+  .cta .btn{width:auto;flex:1}
+  .btn-secondary{background:#1b1c1f;border:1px solid var(--border);color:#fff}
+  .btn-accent{flex:2}
 
   /* SERVICES */
   .svc{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -173,9 +177,10 @@
 
   <!-- CTA -->
   <div class="cta">
-  <div class="cta-row">
-    <button class="btn btn-secondary" id="backBtn" onclick="prevAction()" style="display:none">Назад</button>
-    <button class="btn btn-accent" onclick="primaryAction()" id="primaryBtn">Продолжить</button>
+    <div class="cta-row">
+      <button class="btn btn-secondary" id="backBtn" onclick="prevAction()" style="display:none">Назад</button>
+      <button class="btn btn-accent" onclick="primaryAction()" id="primaryBtn">Продолжить</button>
+    </div>
   </div>
 </div>
 
@@ -230,7 +235,7 @@ const state = { services:new Set(), master:null, date:null, time:null };
 /* ====== ХЕЛПЕРЫ СВЯЗКИ ====== */
 function hasSeniorServices(){ return Array.from(state.services).some(id => id.startsWith('s_')); }
 function hasBasicServices(){ const ids=new Set(basic.map(s=>s.id)); return Array.from(state.services).some(id=>ids.has(id)); }
-function isSeniorMasterSelected(){ return state.master === SENIOR_MASTER_ID; }
+function isSeniorMasterSelected(){ return state.master === 'm_bektur'; }
 
 /** Правила:
  * - Если выбран старший мастер ИЛИ есть услуги senior → блокируем basic-услуги и обычных мастеров.
@@ -247,7 +252,7 @@ function reconcileRules(){
   } else if (basicMode){
     const seniorIds = new Set(senior.map(s=>s.id));
     for (const id of Array.from(state.services)) if (seniorIds.has(id)) state.services.delete(id);
-    if (state.master === SENIOR_MASTER_ID) state.master = null;
+    if (state.master === 'm_bektur') state.master = null;
   }
 
   renderServices();
@@ -257,37 +262,18 @@ function reconcileRules(){
 
 /* ====== UI / NAV ====== */
 const sections = ['services','masters','calendar','checkout','contacts'];
-
 function showSection(id){
-  // блокировки по шагам
-  if (id==='masters' && state.services.size===0) {
-    alert('Сначала выберите хотя бы одну услугу'); return;
-  }
-  if (id==='calendar' && !state.master) {
-    alert('Сначала выберите мастера'); return;
-  }
-  if (id==='checkout' && (!state.date || !state.time)) {
-    alert('Сначала выберите дату и время'); return;
-  }
+  sections.forEach(s=>document.getElementById(s).style.display = (s===id)?'block':'none');
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.toggle('active', t.getAttribute('href')==='#'+id));
+  document.getElementById('primaryBtn').textContent = (id==='checkout')?'Подтвердить запись':'Продолжить';
 
-  sections.forEach(s=>{
-    document.getElementById(s).style.display = (s===id)?'block':'none';
-  });
-  document.querySelectorAll('.tabs .tab').forEach(t=>{
-    t.classList.toggle('active', t.getAttribute('href')==='#'+id);
-  });
-  document.getElementById('primaryBtn').textContent =
-    (id==='checkout') ? 'Подтвердить запись' : 'Продолжить';
+  // показать/скрыть «Назад»
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) backBtn.style.display = (id==='services') ? 'none' : 'inline-block';
 
   updateSummary();
 }
-
-document.querySelectorAll('.tabs a').forEach(a=>{
-  a.addEventListener('click',e=>{
-    e.preventDefault();
-    showSection(a.getAttribute('href').slice(1));
-  });
-});
+document.querySelectorAll('.tabs a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault(); showSection(a.getAttribute('href').slice(1));}));
 
 /* ====== РЕНДЕР УСЛУГ ====== */
 function renderServiceList(container, list, disabled){
@@ -418,7 +404,7 @@ function updateSummary(){
   }
 }
 
-/* ====== ПЕРЕХОДЫ / ОТПРАВКА ====== */
+/* ====== ПЕРЕХОДЫ / ДАЛЬШЕ ====== */
 function primaryAction(){
   const current = sections.find(id => document.getElementById(id).style.display !== 'none');
 
@@ -435,11 +421,10 @@ function primaryAction(){
     showSection('checkout'); return;
   }
 
-  // checkout — финальная отправка
+  // Финальная отправка
   if (state.services.size === 0) { alert('Выберите хотя бы одну услугу'); return; }
   if (!state.master) { alert('Выберите мастера'); return; }
   if (!state.date || !state.time) { alert('Выберите дату и время'); return; }
-
   const name  = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
   if (!name || !phone) { alert('Укажите имя и телефон'); return; }
@@ -452,15 +437,26 @@ function primaryAction(){
   setTimeout(()=>alert('Заявка сформирована. Если WhatsApp не открылся — скопируйте сообщение:\n\n'+msg), 900);
 }
 
+/* ====== НАЗАД ====== */
+function prevAction(){
+  const current = sections.find(id => document.getElementById(id).style.display !== 'none');
+  if (current === 'masters')   { showSection('services');  return; }
+  if (current === 'calendar')  { showSection('masters');   return; }
+  if (current === 'checkout')  { showSection('calendar');  return; }
+}
+
 /* ====== INIT ====== */
 function init(){
-  renderServices(); renderMasters(); renderCal(); renderDaySlots();
+  renderServices();
+  renderMasters();
+  renderCal();
+  renderDaySlots();
   showSection('services');
   updateSummary();
 }
 init();
 
-// Регистрация Service Worker (для PWA/офлайн)
+/* ====== Service Worker ====== */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js')
     .then(()=>console.log('✅ Service Worker зарегистрирован'))
