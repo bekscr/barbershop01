@@ -1,9 +1,11 @@
 {
   "name": "Barbershop 01",
   "short_name": "BS01",
-  "start_url": "./index.html",
-  "scope": "./",
+  "id": "/barbershop01",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0f0f10",
   "theme_color": "#111111",
   "icons": [
