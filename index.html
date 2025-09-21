@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Barbershop 01 — Онлайн-запись</title>
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <style>
   :root{
@@ -71,6 +72,9 @@
   .dow{font-size:12px;color:var(--muted)}
   .d{background:#121315;border:1px solid var(--border);cursor:pointer}
   .d.sel{background:#fff;color:#111;border-color:#fff}
+
+  /* DISABLED states */
+  .card.disabled, .chip.disabled, .radio.disabled { opacity:.45; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -172,15 +176,16 @@
 
 <script>
 /* ====== ДАННЫЕ ====== */
+const SENIOR_MASTER_ID = 'm_bektur';
 const salon = { phone:'+996509951599', hours:'10:00–21:00' };
 
 const masters = [
-  {id:'m_bektur',  name:'Бектур',  role:'Старший мастер', exp:'7 лет стажа',  senior:true,  photo:'https://images.unsplash.com/photo-1544702995-996b815c338c?q=80&w=400&auto=format', slots:['10:00','10:30','11:30','12:30','14:00','16:00','18:00','20:00']},
-  {id:'m_bolot',   name:'Болот',   role:'Барбер',         exp:'3 года стажа', senior:false, photo:'https://images.unsplash.com/photo-1544717305-2782549b5136?q=80&w=400&auto=format', slots:['10:00','11:00','12:00','13:00','15:00','17:00','19:00']},
-  {id:'m_kaabay',  name:'Каабай',  role:'Барбер',         exp:'2 года стажа', senior:false, photo:'https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=400&auto=format', slots:['10:30','11:30','12:30','14:30','16:30','18:30']},
-  {id:'m_kubanych',name:'Кубаныч', role:'Барбер',         exp:'2 года стажа', senior:false, photo:'https://images.unsplash.com/photo-1602471615287-8e44d1a3b774?q=80&w=400&auto=format', slots:['10:00','11:00','12:00','15:00','17:30','19:30']},
-  {id:'m_adilet',  name:'Адилет',  role:'Барбер',         exp:'15 лет стаж',  senior:false, photo:'https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=400&auto=format', slots:['10:00','12:00','14:00','16:00','18:00','20:30']},
-  {id:'m_elnura',  name:'Элнура',  role:'Барбер',         exp:'6 лет стажа',  senior:false, photo:'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format', slots:['11:00','12:00','13:30','15:30','17:30','19:30']},
+  {id:'m_bektur',  name:'Бектур',  role:'Старший мастер', exp:'7 лет стажа',  senior:true,  photo:'./img/bektur.jpg',   slots:['10:00','10:30','11:30','12:30','14:00','16:00','18:00','20:00']},
+  {id:'m_bolot',   name:'Болот',   role:'Барбер',         exp:'3 года стажа', senior:false, photo:'./img/bolot.jpg',    slots:['10:00','11:00','12:00','13:00','15:00','17:00','19:00']},
+  {id:'m_kaabay',  name:'Каабай',  role:'Барбер',         exp:'2 года стажа', senior:false, photo:'./img/kaabay.jpg',   slots:['10:30','11:30','12:30','14:30','16:30','18:30']},
+  {id:'m_kubanych',name:'Кубаныч', role:'Барбер',         exp:'2 года стажа', senior:false, photo:'./img/kubanych.jpg', slots:['10:00','11:00','12:00','15:00','17:30','19:30']},
+  {id:'m_adilet',  name:'Адилет',  role:'Барбер',         exp:'15 лет стаж',  senior:false, photo:'./img/adilet.jpg',   slots:['10:00','12:00','14:00','16:00','18:00','20:30']},
+  {id:'m_elnura',  name:'Элнура',  role:'Барбер',         exp:'6 лет стажа',  senior:false, photo:'./img/elnura.jpg',   slots:['11:00','12:00','13:30','15:30','17:30','19:30']},
 ];
 
 const basic = [
@@ -217,6 +222,34 @@ const senior = [
 /* ====== СОСТОЯНИЕ ====== */
 const state = { services:new Set(), master:null, date:null, time:null };
 
+/* ====== ХЕЛПЕРЫ СВЯЗКИ ====== */
+function hasSeniorServices(){ return Array.from(state.services).some(id => id.startsWith('s_')); }
+function hasBasicServices(){ const ids=new Set(basic.map(s=>s.id)); return Array.from(state.services).some(id=>ids.has(id)); }
+function isSeniorMasterSelected(){ return state.master === SENIOR_MASTER_ID; }
+
+/** Правила:
+ * - Если выбран старший мастер ИЛИ есть услуги senior → блокируем basic-услуги и обычных мастеров.
+ * - Если выбраны basic-услуги (и нет senior) → блокируем senior-услуги и старшего мастера.
+ * - Extra доступны всегда.
+ */
+function reconcileRules(){
+  const seniorMode = isSeniorMasterSelected() || hasSeniorServices();
+  const basicMode  = hasBasicServices() && !seniorMode;
+
+  if (seniorMode){
+    const basicIds = new Set(basic.map(s=>s.id));
+    for (const id of Array.from(state.services)) if (basicIds.has(id)) state.services.delete(id);
+  } else if (basicMode){
+    const seniorIds = new Set(senior.map(s=>s.id));
+    for (const id of Array.from(state.services)) if (seniorIds.has(id)) state.services.delete(id);
+    if (state.master === SENIOR_MASTER_ID) state.master = null;
+  }
+
+  renderServices();
+  renderMasters();
+  updateSummary();
+}
+
 /* ====== UI / NAV ====== */
 const sections = ['services','masters','calendar','checkout','contacts'];
 function showSection(id){
@@ -228,28 +261,39 @@ function showSection(id){
 document.querySelectorAll('.tabs a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault(); showSection(a.getAttribute('href').slice(1));}));
 
 /* ====== РЕНДЕР УСЛУГ ====== */
-function renderServiceList(container, list){
+function renderServiceList(container, list, disabled){
   container.innerHTML='';
   list.forEach(s=>{
     const row = document.createElement('div'); row.className='svc';
     row.innerHTML = `<div class="info"><div style="font-weight:700">${s.name}${s.disabled?' (недоступно)':''}</div><div class="meta">${s.dur} мин • ${s.price} сом</div></div>`;
-    const ch = document.createElement('input'); ch.type='checkbox'; ch.className='check'; ch.disabled=!!s.disabled;
+    const ch = document.createElement('input'); ch.type='checkbox'; ch.className='check';
     ch.checked = state.services.has(s.id);
-    ch.onchange = ()=>{ ch.checked?state.services.add(s.id):state.services.delete(s.id); updateSummary(); };
+    ch.disabled = !!s.disabled || !!disabled;
+    if (ch.disabled) row.style.opacity=.5;
+    ch.onchange = ()=>{ ch.checked?state.services.add(s.id):state.services.delete(s.id); reconcileRules(); };
     row.appendChild(ch); container.appendChild(row);
   });
 }
 function renderServices(){
-  renderServiceList(document.getElementById('svc-basic'), basic);
-  renderServiceList(document.getElementById('svc-extra'), extra);
-  renderServiceList(document.getElementById('svc-senior'), senior);
+  const seniorMode = isSeniorMasterSelected() || hasSeniorServices();
+  const basicMode  = hasBasicServices() && !seniorMode;
+  renderServiceList(document.getElementById('svc-basic'),  basic,  seniorMode);
+  renderServiceList(document.getElementById('svc-extra'),  extra,  false);
+  renderServiceList(document.getElementById('svc-senior'), senior, basicMode);
 }
 
-/* ====== РЕНДЕР МАСТЕРОВ (с фото) ====== */
+/* ====== РЕНДЕР МАСТЕРОВ ====== */
 function renderMasters(){
   const box=document.getElementById('mastersList'); box.innerHTML='';
+  const seniorMode = isSeniorMasterSelected() || hasSeniorServices();
+  const basicMode  = hasBasicServices() && !seniorMode;
+
   masters.forEach(m=>{
-    const card=document.createElement('div'); card.className='card';
+    let disabled=false;
+    if (seniorMode && !m.senior) disabled=true;
+    if (basicMode  &&  m.senior) disabled=true;
+
+    const card=document.createElement('div'); card.className='card'; if(disabled) card.classList.add('disabled');
     card.innerHTML = `
       <div class="row">
         <div class="master">
@@ -257,28 +301,30 @@ function renderMasters(){
           <div>
             <div style="font-weight:800">${m.role} ${m.name}</div>
             <div class="muted">${m.exp}</div>
-            <div class="chipbar" style="margin-top:8px">${m.slots.map(t=>`<span class="chip" data-mid="${m.id}" data-t="${t}">${t}</span>`).join('')}</div>
+            <div class="chipbar" style="margin-top:8px">${m.slots.map(t=>`<span class="chip ${disabled?'disabled':''}" data-mid="${m.id}" data-t="${t}">${t}</span>`).join('')}</div>
           </div>
         </div>
-        <label class="radio ${state.master===m.id?'act':''}" data-radio="${m.id}"><span></span></label>
+        <label class="radio ${state.master===m.id?'act':''} ${disabled?'disabled':''}" data-radio="${m.id}"><span></span></label>
       </div>`;
+
+    const r = card.querySelector('[data-radio]');
+    if (!disabled) {
+      r.onclick = ()=>{ state.master=m.id; reconcileRules(); };
+    }
+    card.querySelectorAll('.chip').forEach(ch=>{
+      if(state.master===ch.dataset.mid && state.time===ch.dataset.t) ch.classList.add('sel');
+      if(!ch.classList.contains('disabled')){
+        ch.onclick=()=>{ state.master=ch.dataset.mid; state.time=ch.dataset.t; reconcileRules(); };
+      }
+    });
+
     box.appendChild(card);
-  });
-  box.querySelectorAll('[data-radio]').forEach(r=>r.onclick=()=>{state.master=r.dataset.radio; state.time=null; renderMasters(); updateSummary();});
-  box.querySelectorAll('.chip').forEach(ch=>{
-    if(state.master===ch.dataset.mid && state.time===ch.dataset.t) ch.classList.add('sel');
-    ch.onclick=()=>{ state.master=ch.dataset.mid; state.time=ch.dataset.t; renderMasters(); updateSummary(); };
   });
 }
 
 /* ====== КАЛЕНДАРЬ (10:00–21:00) + авто-предложение времени ====== */
-const calHead=document.getElementById('calHead')||(() => {
-  const head=document.createElement('div'); head.id='calHead'; return head;
-})();
-'Пн Вт Ср Чт Пт Сб Вс'.split(' ').forEach(d=>{
-  const el=document.createElement('div'); el.className='dow'; el.textContent=d;
-  document.getElementById('calHead').appendChild(el);
-});
+const calHead=document.getElementById('calHead');
+'Пн Вт Ср Чт Пт Сб Вс'.split(' ').forEach(d=>{const el=document.createElement('div'); el.className='dow'; el.textContent=d; calHead.appendChild(el);});
 const calGrid=document.getElementById('calGrid'); const monthLabel=document.getElementById('monthLabel');
 const months='Январь Февраль Март Апрель Май Июнь Июль Август Сентябрь Октябрь Ноябрь Декабрь'.split(' ');
 let cur=new Date(); cur.setDate(1);
@@ -295,15 +341,11 @@ function renderCal(){
   }
 }
 function shiftMonth(delta){cur.setMonth(cur.getMonth()+delta); renderCal(); renderDaySlots();}
-function generateSlots(){
-  const out=[]; let h=10,m=0; while(h<21 || (h===21&&m===0)){ out.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`); m+=30; if(m>=60){m=0;h++;} }
-  return out;
-}
+function generateSlots(){ const out=[]; let h=10,m=0; while(h<21 || (h===21&&m===0)){ out.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`); m+=30; if(m>=60){m=0;h++;} } return out; }
 function renderDaySlots(){
   const box=document.getElementById('daySlots'); box.innerHTML='';
   if(!state.date){ box.innerHTML='<span class="muted">Выберите дату</span>'; return; }
   const slots = generateSlots();
-  // авто-предложение ближайшего времени, если ничего не выбрано
   if(!state.time){
     const now = new Date();
     const isToday = state.date === now.toISOString().slice(0,10);
@@ -333,7 +375,6 @@ function updateSummary(){
   const dur = chosen.reduce((a,b)=>a+(b.dur||0),0);
   const m = masters.find(x=>x.id===state.master);
 
-  // текст в блоке «Ваш выбор»
   const text =
     `Услуги: ${chosen.map(s=>s.name).join(', ')||'—'} • `+
     `<b>${money(sum)} сом</b> • ${dur||0} мин. `+
@@ -341,7 +382,6 @@ function updateSummary(){
     `Дата: <b>${state.date||'—'}</b> ${state.time||''}`;
   document.getElementById('summary').innerHTML = text;
 
-  // подпись на кнопке (на шагах до подтверждения)
   const visible = ['services','masters','calendar','contacts'].find(id=>document.getElementById(id).style.display!=='none');
   if (visible){
     const btn = document.getElementById('primaryBtn');
@@ -362,7 +402,6 @@ function primaryAction(){
     return;
   }
 
-  // Валидация перед отправкой
   if (state.services.size === 0) { alert('Выберите хотя бы одну услугу.'); return; }
   if (!state.date || !state.time) { alert('Выберите дату и время.'); return; }
 
@@ -374,7 +413,6 @@ function primaryAction(){
   const msg = 'Заявка: ' + document.getElementById('summary').innerText +
               `\nКлиент: ${name}\nТелефон: ${phone}`;
 
-  // Открыть чат с фиксированным номером
   const waUrl = `https://wa.me/996509951599?text=${encodeURIComponent(msg)}`;
   window.open(waUrl, '_blank');
   setTimeout(()=>alert('Заявка сформирована. Если WhatsApp не открылся — скопируйте сообщение:\n\n'+msg), 900);
@@ -382,22 +420,19 @@ function primaryAction(){
 
 /* ====== INIT ====== */
 function init(){
-  // заголовки дней недели
-  const head = document.getElementById('calHead');
-  head.innerHTML='';
-  'Пн Вт Ср Чт Пт Сб Вс'.split(' ').forEach(d=>{const el=document.createElement('div'); el.className='dow'; el.textContent=d; head.appendChild(el);});
-
   renderServices(); renderMasters(); renderCal(); renderDaySlots();
   showSection('services');
+  reconcileRules();
   updateSummary();
 }
 init();
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("✅ Service Worker зарегистрирован"))
-      .catch(err => console.error("❌ Ошибка SW:", err));
-  }
+// Регистрация Service Worker (для PWA/офлайн)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(()=>console.log('✅ Service Worker зарегистрирован'))
+    .catch(err=>console.error('❌ Ошибка SW:', err));
+}
 </script>
 </body>
 </html>
